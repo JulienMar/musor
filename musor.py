@@ -1,4 +1,4 @@
-import pylast, glob, os
+import pylast, glob, os, difflib
 from mutagen.id3 import ID3, TIT2, TALB, TPE1, TPE2, TRCK, TCON, TDRC
 import configparser
 
@@ -14,9 +14,10 @@ class Musor:
         tracks = Musor.get_tracks(artist, album)
         for track in tracks:
             print(tracks.index(track) + 1)
-        for file in os.listdir(directory):
-            if file.endswith(".mp3"):
-                print(file)
+            print(track)
+            matches = difflib.get_close_matches(track.title, os.listdir(directory))
+            print(matches)
+        
         os.rename(directory, os.path.dirname(os.path.abspath(directory))+ "/" + album)
 
     def get_tracks(artist, album):
