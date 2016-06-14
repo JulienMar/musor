@@ -1,4 +1,4 @@
-import pylast
+import pylast, glob, os
 from mutagen.id3 import ID3, TIT2, TALB, TPE1, TPE2, TRCK, TCON, TDRC
 import configparser
 
@@ -10,8 +10,14 @@ API_SECRET = config['DEFAULT']['API_SECRET']
 
 
 class Musor:
-    def set_album_names(dir):
-        return 0
+    def set_album_names(directory, album, artist):
+        tracks = Musor.get_tracks(artist, album)
+        for track in tracks:
+            print(tracks.index(track) + 1)
+        for file in os.listdir(directory):
+            if file.endswith(".mp3"):
+                print(file)
+        os.rename(directory, os.path.dirname(os.path.abspath(directory))+ "/" + album)
 
     def get_tracks(artist, album):
         network = pylast.LastFMNetwork(api_key=API_KEY, api_secret=API_SECRET)
@@ -39,8 +45,4 @@ class Musor:
         audio["TRCK"] = TRCK(encoding=3, text=number)
         audio.save()
 
-
-
-
-#Musor.set_track_metadata("/home/julien/Documents/FunProjects/album1/Escape.mp3", "Netsk", "Escape", "1", "1", "drum and bass", "2010")
-Musor.get_genre("Chet faker", "built on glass")
+Musor.set_album_names("/home/julien/Documents/FunProjects/Netsky", "Netsky", "Netsky")
