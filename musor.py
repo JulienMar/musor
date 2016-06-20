@@ -17,8 +17,10 @@ class Musor:
                 if track.title in realTrack:
                     number = tracks.index(track)
                     genre = Musor.get_genres(artist, album)
-                    album_name = track.title
                     file_path = os.path.realpath(realTrack)
+                    year = Musor.get_date(artist, album)
+                    Musor.set_track_metadata(file_path, artist, track.title, number, album, genre, year)
+                    os.rename(file_path, track.title)
 
         os.rename(directory, os.path.dirname(os.path.abspath(directory))+ "/" + album)
 
@@ -41,7 +43,7 @@ class Musor:
     def get_date(artist, album):
         network = pylast.LastFMNetwork(api_key=API_KEY, api_secret=API_SECRET)
         album = network.get_album(artist, album).get_release_date()
-        print(album)
+        return 0
 
     def set_track_metadata(file, artist, title, number, album_name, genres, year):
         audio = ID3(file)
