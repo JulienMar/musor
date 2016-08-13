@@ -1,19 +1,26 @@
-import pylast, glob, os, difflib
-from mutagen.id3 import ID3, TIT2, TALB, TPE1, TPE2, TRCK, TCON, TDRC
 import configparser
+
+import os
+import pylast
+import requests
+import pygn
+from mutagen.id3 import ID3, TIT2, TALB, TPE1, TPE2, TRCK, TCON, TDRC
 
 config = configparser.ConfigParser()
 config.read("config.ini")
 
 API_KEY = config['DEFAULT']['API_KEY']
 API_SECRET = config['DEFAULT']['API_SECRET']
+CLIENT_ID = config['DEFAULT']['CLIENT_ID']
+USER_ID = config['DEFAULT']['USER_ID']
 
 
 class Musor:
     def set_album_names(directory, album, artist):
         tracks = Musor.get_tracks(artist, album)
+        realtracks = os.listdir(directory)
         for track in tracks:
-            for realTrack in os.listdir(directory):
+            for realTrack in realtracks:
                 if track.title in realTrack:
                     number = tracks.index(track)
                     genre = Musor.get_genres(artist, album)
@@ -33,16 +40,14 @@ class Musor:
         network = pylast.LastFMNetwork(api_key=API_KEY, api_secret=API_SECRET)
         genres = network.get_album(artist, album).get_top_tags(5)
         all_genres = TCON.GENRES
-        list_in_genres = []
-        for genre in genres:
-            if all_genres.__contains__(genre[0].name.title()):
-                list_in_genres.append(genre)
+        list_in_genres = list(filter((lambda genre: genre[0].name.title in all_genres), genres))
         return list_in_genres
 
     #TODO: find why it returns none
     def get_date(artist, album):
         network = pylast.LastFMNetwork(api_key=API_KEY, api_secret=API_SECRET)
-        album = network.get_album(artist, album).get_release_date()
+        year = network.get_album(artist, album).get_release_date()
+        print(year)
         return 0
 
     def set_track_metadata(file, artist, title, number, album_name, genres, year):
@@ -57,4 +62,14 @@ class Musor:
         audio["TRCK"] = TRCK(encoding=3, text=number)
         audio.save()
 
-Musor.set_album_names("/home/julien/Documents/FunProjects/Netsky", "Netsky", "Netsky")
+    def test_date(artist, album):
+        params = {
+            "method": "album.getInfo",
+            "album": album,
+            "artist": artist,
+            'api_key': API_KEY}
+        r = requests.get('http://ws.audioscrobbler.com/2.0/', params=params)
+        print(r.content)
+
+gnmetadata = pygn.search(CLIENT_ID,USER_ID,'Netsky', 'Netsky')
+print(gnmetadata)
