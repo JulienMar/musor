@@ -1,7 +1,6 @@
 import configparser
 
 import os
-import pylast
 import requests
 import pygn
 from mutagen.id3 import ID3, TIT2, TALB, TPE1, TPE2, TRCK, TCON, TDRC
@@ -16,6 +15,21 @@ USER_ID = config['DEFAULT']['USER_ID']
 
 
 class Musor:
+
+    def get_gracenote_album_data(artist, album):
+        gnmetadata = pygn.search(CLIENT_ID, USER_ID, artist, album)
+        return gnmetadata
+
+    def get_gracenote_track_data(artist, album, track):
+        gnmetadata = pygn.search(CLIENT_ID, USER_ID, artist, album, track)
+        return gnmetadata
+
+    def get_track_titles(gnmetadata_album):
+        tracks = []
+        for track in gnmetadata_album['tracks']:
+            tracks.append(track['track_title'])
+        print(tracks)
+
     def set_album_names(directory, album, artist):
         tracks = Musor.get_tracks(artist, album)
         realtracks = os.listdir(directory)
@@ -31,26 +45,7 @@ class Musor:
 
         os.rename(directory, os.path.dirname(os.path.abspath(directory))+ "/" + album)
 
-    def get_tracks(artist, album):
-        network = pylast.LastFMNetwork(api_key=API_KEY, api_secret=API_SECRET)
-        album = network.get_album(artist, album)
-        return album.get_tracks()
-
-    def get_genres(artist, album):
-        network = pylast.LastFMNetwork(api_key=API_KEY, api_secret=API_SECRET)
-        genres = network.get_album(artist, album).get_top_tags(5)
-        all_genres = TCON.GENRES
-        list_in_genres = list(filter((lambda genre: genre[0].name.title in all_genres), genres))
-        return list_in_genres
-
-    #TODO: find why it returns none
-    def get_date(artist, album):
-        network = pylast.LastFMNetwork(api_key=API_KEY, api_secret=API_SECRET)
-        year = network.get_album(artist, album).get_release_date()
-        print(year)
-        return 0
-
-    def set_track_metadata(file, artist, title, number, album_name, genres, year):
+    def set_track_metadata(file, gracenote_data, track_number):
         audio = ID3(file)
         audio["TIT2"] = TIT2(encoding=3, text=title)
         audio["TPE2"] = TPE2(encoding=3, text=artist)
@@ -62,14 +57,7 @@ class Musor:
         audio["TRCK"] = TRCK(encoding=3, text=number)
         audio.save()
 
-    def test_date(artist, album):
-        params = {
-            "method": "album.getInfo",
-            "album": album,
-            "artist": artist,
-            'api_key': API_KEY}
-        r = requests.get('http://ws.audioscrobbler.com/2.0/', params=params)
-        print(r.content)
 
-gnmetadata = pygn.search(CLIENT_ID,USER_ID,'Netsky', 'Netsky')
-print(gnmetadata)
+grdat = Musor.get_gracenote_album_data("Netsky", "Netsky")
+Musor.get_track_titles(grdat)
+

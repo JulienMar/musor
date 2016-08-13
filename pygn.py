@@ -17,7 +17,7 @@ import urllib.request as urllib_request #for python 3
 import urllib.parse as urllib_parse
 
 # Set DEBUG to True if you want this module to print out the query and response XML
-DEBUG = True
+DEBUG = False
 
 
 class gnmetadata(dict):
