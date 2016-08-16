@@ -1,15 +1,13 @@
 import configparser
 
 import os
-import requests
 import pygn
+import re
 from mutagen.id3 import ID3, TIT2, TALB, TPE1, TPE2, TRCK, TCON, TDRC
 
 config = configparser.ConfigParser()
 config.read("config.ini")
 
-API_KEY = config['DEFAULT']['API_KEY']
-API_SECRET = config['DEFAULT']['API_SECRET']
 CLIENT_ID = config['DEFAULT']['CLIENT_ID']
 USER_ID = config['DEFAULT']['USER_ID']
 
@@ -28,36 +26,39 @@ class Musor:
         tracks = []
         for track in gnmetadata_album['tracks']:
             tracks.append(track['track_title'])
-        print(tracks)
+        return tracks
 
     def set_album_names(directory, album, artist):
-        tracks = Musor.get_tracks(artist, album)
-        realtracks = os.listdir(directory)
+        gnmetadata_album = Musor.get_gracenote_album_data(album, artist)
+        tracks = Musor.get_track_titles(gnmetadata_album)
+
+        final_directory = os.path.expanduser(directory)
+        all_music_files = os.listdir(final_directory)
+
         for track in tracks:
-            for realTrack in realtracks:
-                if track.title in realTrack:
-                    number = tracks.index(track)
-                    genre = Musor.get_genres(artist, album)
-                    file_path = os.path.realpath(realTrack)
-                    year = Musor.get_date(artist, album)
-                    Musor.set_track_metadata(file_path, artist, track.title, number, album, genre, year)
-                    os.rename(file_path, track.title)
+            for music_file in all_music_files:
+                check_track_name = re.sub(r'\W+', '', track).lower()
+                check_music_file = re.sub(r'\W+', '', music_file).lower()
+                if check_track_name in check_music_file:
+                    print(music_file)
+                    gn_track_data = Musor.get_gracenote_track_data(artist, album, track)
+                    Musor.set_track_metadata(final_directory + '/' + music_file, gn_track_data)
+                    extension = music_file.rsplit('.', 1)[-1]
+                    #os.rename(file_path, final_directory + "/" + track + "." + extension)
 
-        os.rename(directory, os.path.dirname(os.path.abspath(directory))+ "/" + album)
+        os.rename(directory, os.path.dirname(os.path.abspath(directory)) + "/" + album)
 
-    def set_track_metadata(file, gracenote_data, track_number):
+    def set_track_metadata(file, gracenote_data):
         audio = ID3(file)
-        audio["TIT2"] = TIT2(encoding=3, text=title)
-        audio["TPE2"] = TPE2(encoding=3, text=artist)
-        #TODO: change to all artist
-        audio["TALB"] = TALB(encoding=3, text=album_name)
-        audio["TPE1"] = TPE1(encoding=3, text=artist)
+        audio["TIT2"] = TIT2(encoding=3, text=gracenote_data['track_title'])
+        audio["TPE2"] = TPE2(encoding=3, text=gracenote_data['track_artist_name'])
+        audio["TALB"] = TALB(encoding=3, text=gracenote_data['album_title'])
+        audio["TPE1"] = TPE1(encoding=3, text=gracenote_data['album_artist_name'])
+        genres = [value['TEXT'] for key, value in gracenote_data['genre'].items()]
         audio["TCON"] = TCON(encoding=3, text=genres)
-        audio["TDRC"] = TDRC(encoding=3, text=year)
-        audio["TRCK"] = TRCK(encoding=3, text=number)
+        audio["TDRC"] = TDRC(encoding=3, text=gracenote_data['album_year'])
+        audio["TRCK"] = TRCK(encoding=3, text=gracenote_data['track_number'])
         audio.save()
 
-
-grdat = Musor.get_gracenote_album_data("Netsky", "Netsky")
-Musor.get_track_titles(grdat)
+Musor.set_album_names(os.path.expanduser('~/Documents/FunProjects/Netsky'), 'Netsky', 'Netsky')
 
